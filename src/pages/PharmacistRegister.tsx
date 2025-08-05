@@ -17,15 +17,37 @@ function PharmacistRegister() {
     terms: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match!');
       return;
     }
-    // Add your registration logic here
-    toast.success('Registration successful!');
-    navigate('/pharmacist/login');
+    
+    try {
+      const response = await fetch('http://localhost:3001/api/pharmacists/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          licenseNumber: formData.qualification, // Using qualification as license number
+          pharmacyName: formData.pharmacyName
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Registration failed');
+        return;
+      }
+
+      toast.success('Registration successful!');
+      navigate('/pharmacist/login');
+    } catch (err) {
+      toast.error('Network error');
+    }
   };
 
   return (
@@ -173,22 +195,6 @@ function PharmacistRegister() {
             </div>
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="terms"
-              required
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              checked={formData.terms}
-              onChange={(e) => setFormData({ ...formData, terms: e.target.checked })}
-            />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-              I agree to the{' '}
-              <a href="#" className="text-blue-600 hover:text-blue-500">
-                Terms and Conditions
-              </a>
-            </label>
-          </div>
 
           <button
             type="submit"

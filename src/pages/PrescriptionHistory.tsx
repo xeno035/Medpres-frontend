@@ -8,10 +8,13 @@ import { useNavigate } from 'react-router-dom';
 const PrescriptionHistory: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showDetails, setShowDetails] = useState<number | null>(null);
+  const [showDetails, setShowDetails] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { prescriptions, clearPrescriptions } = usePrescriptions();
   const { patients } = usePatients();
+
+  const doctorData = localStorage.getItem('doctor');
+  const doctor = doctorData ? JSON.parse(doctorData) : null;
 
   // Use useMemo to optimize the filtering
   const filteredPrescriptions = useMemo(() => {
@@ -99,6 +102,22 @@ const PrescriptionHistory: React.FC = () => {
               )}
             </div>
           </div>
+          {/* Doctor Info */}
+          {doctor && (
+            <div className="mb-4 p-4 bg-blue-50 rounded-lg flex items-center space-x-6">
+              <User className="h-8 w-8 text-blue-600" />
+              <div>
+                <div className="font-semibold text-lg text-blue-900">{doctor.name}</div>
+                <div className="text-sm text-blue-700">{doctor.email}</div>
+                {doctor.specialization && (
+                  <div className="text-sm text-blue-700">Specialization: {doctor.specialization}</div>
+                )}
+                {doctor.licenseNumber && (
+                  <div className="text-sm text-blue-700">License #: {doctor.licenseNumber}</div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">

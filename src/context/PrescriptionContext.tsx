@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { usePatients } from './PatientContext';
 
 interface Prescription {
-  id: number;
-  patientId: number;
+  id: string; // Changed from number to string for MongoDB ObjectId
+  patientId: string; // Changed from number to string
   patientName: string;
   prescriptionNumber: string;
   date: string;
@@ -21,10 +21,11 @@ interface Prescription {
 interface PrescriptionContextType {
   prescriptions: Prescription[];
   addPrescription: (prescription: Omit<Prescription, 'id'>) => Promise<void>;
-  deletePrescription: (id: number) => Promise<void>;
+  deletePrescription: (id: string) => Promise<void>; // Changed to string
   clearPrescriptions: () => void;
   loading: boolean;
   error: string | null;
+  getPrescriptionByNumber: (prescriptionNumber: string) => Promise<Prescription | null>;
 }
 
 const API_URL = 'http://localhost:3001/api';
@@ -50,6 +51,18 @@ export const PrescriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getPrescriptionByNumber = async (prescriptionNumber: string): Promise<Prescription | null> => {
+    try {
+      const response = await fetch(`${API_URL}/prescriptions?prescriptionNumber=${encodeURIComponent(prescriptionNumber)}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) return data[0];
+      return null;
+    } catch {
+      return null;
     }
   };
 
@@ -82,7 +95,7 @@ export const PrescriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  const deletePrescription = async (id: number) => {
+  const deletePrescription = async (id: string) => {
     try {
       const response = await fetch(`${API_URL}/prescriptions/${id}`, {
         method: 'DELETE',
@@ -112,7 +125,8 @@ export const PrescriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       deletePrescription,
       clearPrescriptions,
       loading,
-      error
+      error,
+      getPrescriptionByNumber,
     }}>
       {children}
     </PrescriptionContext.Provider>

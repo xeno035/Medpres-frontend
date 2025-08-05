@@ -16,7 +16,7 @@ const NewPrescription: React.FC = () => {
   const navigate = useNavigate();
   const { patients } = usePatients();
   const { addPrescription } = usePrescriptions();
-  const [selectedPatient, setSelectedPatient] = useState<number | ''>('');
+  const [selectedPatient, setSelectedPatient] = useState<string>(''); // Changed from number to string
   const [medications, setMedications] = useState<Medication[]>([{ name: '', dosage: '', frequency: '', duration: '' }]);
   const [instructions, setInstructions] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -38,46 +38,61 @@ const NewPrescription: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedPatient) {
       toast.error('Please select a patient');
       return;
     }
 
-    if (medications.some(med => !med.name.trim() || !med.dosage.trim() || !med.frequency.trim())) {
-      toast.error('Please fill in all medication details');
+    const selectedPatientData = patients.find(p => p.id === selectedPatient);
+    if (!selectedPatientData) {
+      toast.error('Selected patient not found');
       return;
     }
 
-    try {
-      const now = new Date();
-      const year = now.getFullYear().toString().slice(-2);
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
-      const prescriptionNumber = `RX-${year}${month}${day}-${selectedPatient.toString().padStart(4, '0')}-${Date.now().toString().slice(-3)}`;
-
-      const selectedPatientData = patients.find(p => p.id === selectedPatient);
-      if (!selectedPatientData) {
-        toast.error('Selected patient not found');
-        return;
-      }
-
-      await addPrescription({
-        patientId: selectedPatient,
-        patientName: selectedPatientData.name,
-        date,
-        medications,
-        instructions,
-        prescriptionNumber,
-        doctorName: "Dr. Smith", // TODO: Get from auth context
-        doctorLicense: "MD12345" // TODO: Get from auth context
-      });
-      
-      toast.success('Prescription created successfully');
-      navigate('/doctor/prescription-history');
-    } catch (error) {
-      toast.error('Failed to create prescription');
+    // Get current doctor's ID from localStorage
+    const doctorData = localStorage.getItem('doctor');
+    if (!doctorData) {
+      toast.error('Please log in as a doctor');
+      navigate('/doctor/login');
+      return;
     }
+    const doctor = JSON.parse(doctorData);
+
+    const prescriptionNumber = `RX-${Date.now()}-${selectedPatient.slice(-4)}`;
+
+    const prescriptionData = {
+      patientId: selectedPatient,
+      doctorId: doctor.id, // Use the logged-in doctor's ID
+      date: new Date().toISOString().split('T')[0],
+      medications,
+      instructions,
+      prescriptionNumber,
+      status: 'completed'
+    };
+
+    console.log('Sending prescription data:', prescriptionData);
+
+    const response = await fetch('http://localhost:3001/api/prescriptions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(prescriptionData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Backend error:', errorData);
+      toast.error(errorData.error || 'Failed to create prescription');
+      return;
+    }
+
+    const result = await response.json();
+    console.log('Prescription created successfully:', result);
+
+    toast.success('Prescription created successfully');
+    navigate('/doctor/prescription-history');
   };
 
   return (
@@ -97,6 +112,23 @@ const NewPrescription: React.FC = () => {
             </div>
           </div>
           
+          {/* Debug info */}
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-700">
+              Patients loaded: {patients.length} | Selected patient: {selectedPatient || 'None'}
+            </p>
+            {patients.length > 0 && (
+              <div className="mt-2">
+                <p className="text-xs text-blue-600">Available patients:</p>
+                {patients.map(patient => (
+                  <p key={patient.id} className="text-xs text-blue-600">
+                    ID: {patient.id} | Name: {patient.name} | Age: {patient.age} | Gender: {patient.gender}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -106,14 +138,14 @@ const NewPrescription: React.FC = () => {
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <select
                   value={selectedPatient}
-                  onChange={(e) => setSelectedPatient(Number(e.target.value))}
+                  onChange={(e) => setSelectedPatient(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   required
                 >
                   <option value="">Select a patient</option>
                   {patients.map((patient) => (
                     <option key={patient.id} value={patient.id}>
-                      {patient.name} (ID: {patient.id})
+                      {patient.name} - {patient.age} years old ({patient.gender})
                     </option>
                   ))}
                 </select>

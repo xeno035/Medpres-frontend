@@ -1,22 +1,34 @@
 // PharmacistDashboard.tsx
 import React, { useState } from 'react';
 import {
-  ClipboardCheck, PackageSearch, History, Search, FileText, LogOut,
+  ClipboardCheck, PackageSearch, History, Search, FileText, LogOut
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePrescriptions } from '../context/PrescriptionContext';
+import { usePrescriptionVerifications } from '../context/PrescriptionVerificationContext';
 
 const PharmacistDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { prescriptions } = usePrescriptions();
-  const [showDetails, setShowDetails] = useState<number | null>(null);
+  const { verifications } = usePrescriptionVerifications();
+  const [showDetails, setShowDetails] = useState<string | null>(null);
+  const [searchPrescriptionNumber, setSearchPrescriptionNumber] = useState('');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
   };
 
-  const successfulPrescriptions = prescriptions.filter(p => p.status === 'completed');
+  // Fix: Ensure successfulPrescriptions uses correct type
+  const successfulPrescriptions = prescriptions.filter(p => (p as any).status === 'completed');
+
+  // Calculate today's verifications
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0];
+  const todaysVerifications = verifications.filter(v => {
+    const vDate = new Date(v.verificationDate);
+    return v.status === 'success' && vDate.toISOString().split('T')[0] === todayString;
+  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -46,9 +58,9 @@ const PharmacistDashboard: React.FC = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <button
-            onClick={() => navigate('/verify-prescription')}
+            onClick={() => navigate('/pharmacist/verify-prescription')}
             className="flex items-center justify-center p-6 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition"
           >
             <ClipboardCheck className="h-6 w-6 mr-2" />
@@ -68,15 +80,23 @@ const PharmacistDashboard: React.FC = () => {
             <History className="h-6 w-6 mr-2" />
             Dispensing History
           </button>
+          {/* Removed Verification Details button */}
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-10">
+        <div className="relative mb-10 max-w-md mx-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           <input
             type="text"
-            placeholder="Search prescriptions or medications..."
+            placeholder="Search for Verification Details by Prescription Number..."
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={searchPrescriptionNumber}
+            onChange={e => setSearchPrescriptionNumber(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && searchPrescriptionNumber.trim()) {
+                navigate(`/pharmacist/verification-details/${searchPrescriptionNumber.trim()}`);
+              }
+            }}
           />
         </div>
 
@@ -152,6 +172,18 @@ const PharmacistDashboard: React.FC = () => {
                       {' '}({prescriptions.find(p => p.id === showDetails)?.doctorLicense})
                     </p>
                   </div>
+                  {/* Verification Details Button */}
+                  <button
+                    onClick={() => {
+                      const prescription = prescriptions.find(p => p.id === showDetails);
+                      if (prescription) {
+                        navigate(`/pharmacist/verification-details/${prescription.prescriptionNumber}`);
+                      }
+                    }}
+                    className="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  >
+                    Verification Details
+                  </button>
                 </div>
               )}
             </div>
@@ -166,7 +198,7 @@ const PharmacistDashboard: React.FC = () => {
             </div>
             <div className="ml-4">
               <h2 className="text-lg font-semibold text-gray-800">Today's Verifications</h2>
-              <p className="text-2xl font-bold text-blue-600">24</p>
+              <p className="text-2xl font-bold text-blue-600">{todaysVerifications.length}</p>
             </div>
           </div>
 

@@ -64,7 +64,7 @@ const PatientRecords: React.FC = () => {
     }
   };
 
-  const filtered = patients.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = patients.filter(p => (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (loading) {
     return (

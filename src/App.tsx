@@ -9,15 +9,18 @@ import DoctorDashboard from './pages/DoctorDashboard';
 import NewPrescription from './pages/NewPrescription';
 import PatientRecords from './pages/PatientRecords';
 import PrescriptionHistory from './pages/PrescriptionHistory';
+import VerifiedPrescriptions from './pages/VerifiedPrescriptions';
 import PharmacistLogin from './pages/PharmacistLogin';
 import PharmacistRegister from './pages/PharmacistRegister';
 import PharmacistDashboard from './pages/PharmacistDashboard';
 import { PrescriptionProvider } from './context/PrescriptionContext';
 import { PatientProvider } from './context/PatientContext';
 import VerifyPrescription from './pages/VerifyPrescription';
+import VerificationDetails from './pages/VerificationDetails';
 import { PrescriptionVerificationProvider } from './context/PrescriptionVerificationContext';
 import InventoryManagement from './pages/InventoryManagement';
 import DispensingHistory from './pages/DispensingHistory'; // adjust path as needed
+import LoginSelection from './pages/LoginSelection';
 
 
 
@@ -44,7 +47,6 @@ function App() {
                         <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                           <Link to="/doctor/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Login</Link>
                           <Link to="/doctor/register" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Register</Link>
-                          <Link to="/doctor/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Dashboard</Link>
                         </div>
                       </div>
                       <div className="relative group">
@@ -52,7 +54,6 @@ function App() {
                         <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                           <Link to="/pharmacist/login" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Login</Link>
                           <Link to="/pharmacist/register" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Register</Link>
-                          <Link to="/pharmacist/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Dashboard</Link>
                         </div>
                       </div>
                     </div>
@@ -68,13 +69,18 @@ function App() {
                 <Route path="/doctor/new-prescription" element={<NewPrescription />} />
                 <Route path="/doctor/patient-records" element={<PatientRecords />} />
                 <Route path="/doctor/prescription-history" element={<PrescriptionHistory />} />
+                <Route path="/doctor/verified-prescriptions" element={<VerifiedPrescriptions />} />
                 <Route path="/pharmacist/login" element={<PharmacistLogin />} />
                 <Route path="/pharmacist/register" element={<PharmacistRegister />} />
                 <Route path="/pharmacist/dashboard" element={<PharmacistDashboard />} />
+                <Route path="/pharmacist/verify-prescription" element={<VerifyPrescription />} />
+                <Route path="/pharmacist/verification-details/:prescriptionNumber" element={<VerificationDetails />} />
+                <Route path="/pharmacist/verification-details" element={<Navigate to="/pharmacist/dashboard" replace />} />
                 <Route path="/verify-prescription" element={<VerifyPrescription />} />
                 <Route path="/inventory" element={<InventoryManagement />} />
                 <Route path="/" element={<Navigate to="/doctor-dashboard" replace />} />
                 <Route path="/prescription-history" element={<DispensingHistory />} />
+                <Route path="/login-selection" element={<LoginSelection />} />
               </Routes>
             </div>
             <Toaster position="top-right" />

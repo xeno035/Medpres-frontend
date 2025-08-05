@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface Patient {
-  id: number;
+  id: string; // Changed from number to string for MongoDB ObjectId
   name: string;
   age: number;
   gender: string;
@@ -13,12 +13,12 @@ interface Patient {
 interface PatientContextType {
   patients: Patient[];
   addPatient: (patient: Omit<Patient, 'id' | 'prescriptionCount'>) => Promise<void>;
-  updatePatient: (id: number, patient: Partial<Patient>) => Promise<void>;
-  deletePatient: (id: number) => Promise<void>;
-  incrementPrescriptionCount: (patientId: number) => Promise<void>;
+  updatePatient: (id: string, patient: Partial<Patient>) => Promise<void>; // Changed to string
+  deletePatient: (id: string) => Promise<void>; // Changed to string
+  incrementPrescriptionCount: (patientId: string) => Promise<void>; // Changed to string
   loading: boolean;
   error: string | null;
-  generatePrescriptionNumber: (patientId: number) => Promise<string>;
+  generatePrescriptionNumber: (patientId: string) => Promise<string>; // Changed to string
 }
 
 const API_URL = 'http://localhost:3001/api';
@@ -39,10 +39,15 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
       const data = await response.json();
       setPatients(data.map((patient: any) => ({
-        ...patient,
+        id: patient._id || patient.id, // Handle MongoDB _id field
+        name: patient.name,
+        age: patient.age,
+        gender: patient.gender,
         conditions: typeof patient.conditions === 'string' 
           ? patient.conditions.split(',').filter(Boolean)
-          : patient.conditions
+          : patient.conditions,
+        lastVisit: patient.lastVisit,
+        prescriptionCount: patient.prescriptionCount || 0
       })));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -86,7 +91,7 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const updatePatient = async (id: number, updatedPatient: Partial<Patient>) => {
+  const updatePatient = async (id: string, updatedPatient: Partial<Patient>) => {
     try {
       const response = await fetch(`${API_URL}/patients/${id}`, {
         method: 'PUT',
@@ -117,7 +122,7 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const deletePatient = async (id: number) => {
+  const deletePatient = async (id: string) => {
     try {
       const response = await fetch(`${API_URL}/patients/${id}`, {
         method: 'DELETE',
@@ -133,7 +138,7 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const incrementPrescriptionCount = async (patientId: number) => {
+  const incrementPrescriptionCount = async (patientId: string) => {
     try {
       const response = await fetch(`${API_URL}/patients/${patientId}/increment-prescription`, {
         method: 'PUT',
@@ -153,7 +158,7 @@ export const PatientProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  const generatePrescriptionNumber = async (patientId: number): Promise<string> => {
+  const generatePrescriptionNumber = async (patientId: string): Promise<string> => {
     try {
       const response = await fetch(`${API_URL}/prescriptions/generate-number/${patientId}`);
       if (!response.ok) {

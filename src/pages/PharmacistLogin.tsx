@@ -11,11 +11,32 @@ function PharmacistLogin() {
     rememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add your login logic here
+    try {
+      const response = await fetch('http://localhost:3001/api/pharmacists/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Login failed');
+        return;
+      }
+
+      const data = await response.json();
+      // Optionally store pharmacist info in localStorage/session
+      localStorage.setItem('pharmacist', JSON.stringify(data.pharmacist));
     toast.success('Login successful!');
     navigate('/pharmacist/dashboard');
+    } catch (err) {
+      toast.error('Network error');
+    }
   };
 
   return (

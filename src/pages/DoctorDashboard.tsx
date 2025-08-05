@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePatients } from '../context/PatientContext';
 import { usePrescriptions } from '../context/PrescriptionContext';
-import { FileText, Users, History, Plus, Search, User, LogOut, ArrowLeft } from 'lucide-react';
+import { FileText, Users, History, Plus, Search, User, LogOut, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 const DoctorDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -70,27 +70,34 @@ const DoctorDashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Doctor Dashboard</h1>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button 
-            onClick={() => navigate('/doctor/new-prescription')}
-            className="flex items-center justify-center p-6 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-colors"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <button 
+              onClick={() => navigate('/doctor/new-prescription')}
+              className="flex items-center justify-center p-6 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-colors"
+            >
               <Plus className="h-6 w-6 mr-2" />
               New Prescription
             </button>
-          <button 
-            onClick={() => navigate('/doctor/patient-records')}
-            className="flex items-center justify-center p-6 bg-green-600 rounded-xl text-white hover:bg-green-700 transition-colors"
-          >
+            <button 
+              onClick={() => navigate('/doctor/patient-records')}
+              className="flex items-center justify-center p-6 bg-green-600 rounded-xl text-white hover:bg-green-700 transition-colors"
+            >
               <Users className="h-6 w-6 mr-2" />
               Patient Records
             </button>
-          <button 
-            onClick={() => navigate('/doctor/prescription-history')}
-            className="flex items-center justify-center p-6 bg-purple-600 rounded-xl text-white hover:bg-purple-700 transition-colors"
-          >
+            <button 
+              onClick={() => navigate('/doctor/prescription-history')}
+              className="flex items-center justify-center p-6 bg-purple-600 rounded-xl text-white hover:bg-purple-700 transition-colors"
+            >
               <History className="h-6 w-6 mr-2" />
               Prescription History
+            </button>
+            <button 
+              onClick={() => navigate('/doctor/verified-prescriptions')}
+              className="flex items-center justify-center p-6 bg-orange-600 rounded-xl text-white hover:bg-orange-700 transition-colors"
+            >
+              <CheckCircle2 className="h-6 w-6 mr-2" />
+              Verified Prescriptions
             </button>
           </div>
 

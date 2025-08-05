@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePrescriptions } from '../context/PrescriptionContext';
 import { usePatients } from '../context/PatientContext';
 import { usePrescriptionVerifications } from '../context/PrescriptionVerificationContext';
-import { ArrowLeft, Search, CheckCircle2, AlertCircle, FileText, User, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const VerifyPrescription: React.FC = () => {
@@ -28,27 +28,45 @@ const VerifyPrescription: React.FC = () => {
       // Get verification history for this prescription
       const history = await getVerificationsByPrescription(prescriptionNumber);
       setVerificationHistory(history);
-      if (prescription.status === 'completed') {
-        // Add new verification record
-        await addVerification({
-          prescriptionNumber,
-          verifiedBy: 'Pharmacist', // In a real app, this would be the logged-in pharmacist's name
-          verificationDate: new Date().toISOString(),
-          status: 'success',
-          notes: 'Prescription verified successfully'
-        });
-        toast.success('Prescription verified successfully!');
-        // Refresh verification history after adding
-        const updatedHistory = await getVerificationsByPrescription(prescriptionNumber);
-        setVerificationHistory(updatedHistory);
-      } else {
-        toast.error('Prescription not yet completed by doctor');
-      }
     } else {
       setFoundPrescription(null);
       setPatientName('');
       setVerificationHistory([]);
       toast.error('Prescription not found');
+    }
+  };
+
+  const handleVerifyPrescription = async () => {
+    const currentPharmacist = localStorage.getItem('pharmacist');
+    if (!currentPharmacist) {
+      toast.error('Please log in as a pharmacist');
+      return;
+    }
+
+    if (!foundPrescription) {
+      toast.error('Please search for a prescription first');
+      return;
+    }
+
+    try {
+      // Add verification record with pharmacist details
+      await addVerification({
+        prescriptionNumber,
+        verifiedBy: JSON.parse(currentPharmacist).name,
+        pharmacistId: JSON.parse(currentPharmacist).id,
+        doctorId: foundPrescription.doctorId,
+        verificationDate: new Date().toISOString(),
+        status: 'verified',
+        notes: 'Prescription verified successfully'
+      });
+
+      toast.success('Prescription verified successfully!');
+      
+      // Navigate to verification details page
+      navigate(`/pharmacist/verification-details/${prescriptionNumber}`);
+    } catch (error) {
+      console.error('Verification error:', error);
+      toast.error('Failed to verify prescription');
     }
   };
 
@@ -58,13 +76,20 @@ const VerifyPrescription: React.FC = () => {
       <nav className="bg-white shadow-sm fixed w-full top-0 z-10">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate(-1)}
                 className="flex items-center text-gray-600 hover:text-gray-800"
               >
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back
+              </button>
+              <button
+                onClick={() => navigate('/pharmacist/dashboard')}
+                className="flex items-center text-gray-600 hover:text-gray-800"
+              >
+                <Home className="h-5 w-5 mr-2" />
+                Home
               </button>
             </div>
           </div>
@@ -100,104 +125,82 @@ const VerifyPrescription: React.FC = () => {
 
           {/* Prescription Details */}
           {foundPrescription && (
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Prescription Details</h2>
-                {foundPrescription.status === 'completed' ? (
-                  <div className="flex items-center text-green-600">
-                    <CheckCircle2 className="h-5 w-5 mr-1" />
-                    <span className="text-sm font-medium">Verified {verificationHistory.length} times</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center text-yellow-600">
-                    <AlertCircle className="h-5 w-5 mr-1" />
-                    <span className="text-sm font-medium">Not verified by doctor</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Patient Information */}
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center mb-3">
-                  <User className="h-5 w-5 text-blue-600 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-800">Patient Information</h3>
+            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Prescription Details</h2>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="font-medium">Prescription #: {foundPrescription.prescriptionNumber}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Name</p>
-                    <p className="text-gray-800">{patientName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Prescription Number</p>
-                    <p className="text-gray-800">{foundPrescription.prescriptionNumber}</p>
-                  </div>
+                <div className="flex items-center">
+                  <User className="h-5 w-5 text-gray-400 mr-3" />
+                  <span>Patient: {patientName}</span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="h-5 w-5 text-gray-400 mr-3" />
+                  <span>Date: {foundPrescription.date}</span>
+                </div>
+                <div className="flex items-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mr-3" />
+                  <span className="text-green-600">Status: {foundPrescription.status}</span>
                 </div>
               </div>
 
-              {/* Prescription Details */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center mb-3">
-                  <FileText className="h-5 w-5 text-gray-600 mr-2" />
-                  <h3 className="text-lg font-medium text-gray-800">Prescription Details</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Date</p>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-gray-800">{new Date(foundPrescription.date).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Medications</p>
-                    <div className="mt-2 p-3 bg-white rounded-lg">
-                      {Array.isArray(foundPrescription.medications)
-                        ? foundPrescription.medications.map((med, idx) => (
-                            <div key={idx}>
-                              {med.name} - {med.dosage} ({med.frequency}) for {med.duration}
-                            </div>
-                          ))
-                        : <p className="text-gray-800 whitespace-pre-wrap">{String(foundPrescription.medications)}</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Instructions</p>
-                    <div className="mt-2 p-3 bg-white rounded-lg">
-                      <p className="text-gray-800 whitespace-pre-wrap">{foundPrescription.instructions}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Verification History */}
-              {verificationHistory.length > 0 && (
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <div className="flex items-center mb-3">
-                    <Clock className="h-5 w-5 text-green-600 mr-2" />
-                    <h3 className="text-lg font-medium text-gray-800">Verification History</h3>
-                  </div>
-                  <div className="space-y-3">
-                    {verificationHistory.map((verification) => (
-                      <div key={verification.id} className="bg-white rounded-lg p-3 shadow-sm">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center">
-                            <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
-                            <span className="text-sm font-medium text-gray-700">
-                              Verified by: {verification.verifiedBy}
-                            </span>
-                          </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(verification.verificationDate).toLocaleString()}
-                          </span>
+              {/* Medications */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium text-gray-800 mb-3">Medications</h3>
+                <div className="space-y-2">
+                  {Array.isArray(foundPrescription.medications) ? 
+                    foundPrescription.medications.map((med: any, index: number) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                        <div className="font-medium">{med.name}</div>
+                        <div className="text-sm text-gray-600">
+                          Dosage: {med.dosage} | Frequency: {med.frequency}
                         </div>
-                        {verification.notes && (
-                          <p className="text-sm text-gray-600 mt-2">{verification.notes}</p>
-                        )}
                       </div>
-                    ))}
-                  </div>
+                    )) : 
+                    <div className="text-gray-500">No medications listed</div>
+                  }
                 </div>
-              )}
+              </div>
+
+              {/* Verify Button */}
+              <div className="mt-6">
+                <button
+                  onClick={handleVerifyPrescription}
+                  className="w-full flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  Verify Prescription
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Verification History */}
+          {verificationHistory.length > 0 && (
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Verification History</h2>
+              <div className="space-y-3">
+                {verificationHistory.map((verification, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">Verified by: {verification.verifiedBy}</div>
+                        <div className="text-sm text-gray-600">
+                          Date: {new Date(verification.verificationDate).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        {verification.status}
+                      </span>
+                    </div>
+                    {verification.notes && (
+                      <div className="text-sm text-gray-600 mt-1">{verification.notes}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

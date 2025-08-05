@@ -11,11 +11,25 @@ function DoctorLogin() {
     rememberMe: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add your login logic here
-    toast.success('Login successful!');
-    navigate('/doctor/dashboard');
+    try {
+      const response = await fetch('http://localhost:3001/api/doctors/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+      const data = await response.json();
+      if (response.ok && data.doctor) {
+        localStorage.setItem('doctor', JSON.stringify(data.doctor));
+        toast.success('Login successful!');
+        navigate('/doctor/dashboard');
+      } else {
+        toast.error(data.error || 'Login failed');
+      }
+    } catch (err) {
+      toast.error('An error occurred during login');
+    }
   };
 
   return (
