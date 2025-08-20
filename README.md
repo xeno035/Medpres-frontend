@@ -39,7 +39,7 @@
 
 ### 1️⃣ Clone the Repo
 ```bash
-git clone https://github.com/your-username/medpres.git
+git clone https://github.com/xeno035/medpres.git
 cd medpres
 
 
